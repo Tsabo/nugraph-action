@@ -1,0 +1,38 @@
+name: Test action
+
+# Exercises the composite action against the fixture project in test/Fixture,
+# so every push/PR proves the action still works end to end. The resulting
+# graph is embedded in the job summary for a quick visual check, and
+# uploaded as an artifact for download.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  generate-fixture-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate graph from fixture project
+        uses: ./
+        with:
+          project-path: test/Fixture/Fixture.csproj
+          output-path: artifacts/nugraph/graph.svg
+          dotnet-version: '10.0.x'
+
+      - name: Add graph to job summary
+        run: |
+          {
+            echo '### Fixture dependency graph'
+            echo "![Fixture dependency graph](data:image/svg+xml;base64,$(base64 -w0 artifacts/nugraph/graph.svg))"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload graph artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-dependency-graph
+          path: artifacts/nugraph/graph.svg
+          if-no-files-found: error

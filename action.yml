@@ -1,0 +1,60 @@
+name: 'NuGet dependency graph'
+description: 'Generate a NuGet dependency graph for a .NET solution or project using nugraph'
+inputs:
+  project-path:
+    description: 'Path to the .sln or .csproj file to analyze'
+    required: true
+  output-path:
+    description: 'Where to write the generated graph artifact'
+    required: false
+    default: 'artifacts/nugraph/graph.svg'
+  ignore:
+    description: 'Newline-separated list of package name patterns to ignore, each turned into a separate -i flag (e.g. "System.*")'
+    required: false
+    default: ''
+  extra-args:
+    description: 'Additional CLI arguments passed to nugraph, space-separated (values containing spaces are not supported)'
+    required: false
+    default: ''
+  install-tool:
+    description: 'Install nugraph as a .NET global tool'
+    required: false
+    default: 'true'
+  dotnet-version:
+    description: '.NET SDK version to use'
+    required: false
+    default: '8.0.x'
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Add dotnet tools to PATH
+      shell: bash
+      run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+    - name: Install nugraph
+      if: ${{ inputs.install-tool == 'true' }}
+      shell: bash
+      run: |
+        if ! command -v nugraph >/dev/null 2>&1; then
+          dotnet tool install --global nugraph
+        fi
+
+    - name: Generate dependency graph
+      shell: bash
+      env:
+        PROJECT_PATH: ${{ inputs.project-path }}
+        OUTPUT_PATH: ${{ inputs.output-path }}
+        IGNORE_PATTERNS: ${{ inputs.ignore }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+      run: |
+        mkdir -p "$(dirname "$OUTPUT_PATH")"
+        ignore_flags=()
+        while IFS= read -r pattern; do
+          [[ -n "$pattern" ]] && ignore_flags+=(-i "$pattern")
+        done <<< "$IGNORE_PATTERNS"
+        nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$OUTPUT_PATH"

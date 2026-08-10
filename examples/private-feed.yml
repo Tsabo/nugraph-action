@@ -1,0 +1,54 @@
+name: NuGet dependency graph (private feed)
+
+# Shows how to authenticate a private NuGet feed (here, GitHub Packages for
+# this repo's own organization) before nugraph runs. nugraph calls
+# `dotnet restore` internally, so any source registered earlier in the same
+# job is picked up automatically — no coordination with the action itself
+# is needed. Adjust the source URL, name, and credentials for your feed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      project-path:
+        description: Path to the .sln or .csproj file to analyze
+        required: true
+        default: ./src/MyApp.sln
+        type: string
+      output-path:
+        description: Where to write the generated graph artifact
+        required: false
+        default: artifacts/nugraph/graph.svg
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  generate-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add private NuGet package source
+        shell: bash
+        run: |
+          dotnet nuget add source https://nuget.pkg.github.com/your-org/index.json \
+            --name github-your-org \
+            --username ${{ github.actor }} \
+            --password ${{ github.token }} \
+            --store-password-in-clear-text
+
+      - name: Generate graph
+        uses: Tsabo/nugraph-action@main
+        with:
+          project-path: ${{ inputs.project-path }}
+          output-path: ${{ inputs.output-path }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-dependency-graph
+          path: ${{ inputs.output-path }}
+          if-no-files-found: error

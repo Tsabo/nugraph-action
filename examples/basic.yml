@@ -1,0 +1,47 @@
+name: NuGet dependency graph
+
+on:
+  workflow_dispatch:
+    inputs:
+      project-path:
+        description: Path to the .sln or .csproj file to analyze
+        required: true
+        default: ./src/MyApp.sln
+        type: string
+      output-path:
+        description: Where to write the generated graph artifact
+        required: false
+        default: artifacts/nugraph/graph.svg
+        type: string
+      ignore:
+        description: Newline-separated package name patterns to ignore (e.g. System.*)
+        required: false
+        default: ''
+        type: string
+      extra-args:
+        description: Additional CLI arguments passed to nugraph
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  generate-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate graph
+        uses: Tsabo/nugraph-action@main
+        with:
+          project-path: ${{ inputs.project-path }}
+          output-path: ${{ inputs.output-path }}
+          ignore: ${{ inputs.ignore }}
+          extra-args: ${{ inputs.extra-args }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-dependency-graph
+          path: ${{ inputs.output-path }}
+          if-no-files-found: error
