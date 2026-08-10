@@ -9,6 +9,7 @@ For local/command-line usage, install and run nugraph directly per its own docs 
 - A composite GitHub Action in [action.yml](action.yml)
 - A manual workflow example in [examples/basic.yml](examples/basic.yml)
 - A private-feed variant in [examples/private-feed.yml](examples/private-feed.yml)
+- A pull request job-summary variant in [examples/job-summary.yml](examples/job-summary.yml)
 
 ## Usage as a GitHub Action
 
