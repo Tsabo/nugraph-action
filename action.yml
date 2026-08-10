@@ -57,4 +57,26 @@ runs:
         while IFS= read -r pattern; do
           [[ -n "$pattern" ]] && ignore_flags+=(-i "$pattern")
         done <<< "$IGNORE_PATTERNS"
-        nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$OUTPUT_PATH"
+
+        # nugraph's --output always writes raw graph source (Mermaid text for
+        # .mmd/.mermaid, Graphviz DOT text otherwise) -- it never renders an
+        # image itself when --output is given. For image extensions, render
+        # the Graphviz DOT source locally with Graphviz's `dot` instead.
+        case "${OUTPUT_PATH,,}" in
+          *.svg|*.png|*.pdf|*.jpg|*.jpeg)
+            if ! command -v dot >/dev/null 2>&1; then
+              sudo apt-get update -qq
+              sudo apt-get install -y --no-install-recommends graphviz
+            fi
+            graph_source="$(mktemp --suffix=.gv)"
+            nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$graph_source"
+            render_format="${OUTPUT_PATH##*.}"
+            render_format="${render_format,,}"
+            [[ "$render_format" == "jpeg" ]] && render_format="jpg"
+            dot "-T$render_format" "$graph_source" -o "$OUTPUT_PATH"
+            rm -f "$graph_source"
+            ;;
+          *)
+            nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$OUTPUT_PATH"
+            ;;
+        esac
