@@ -2,9 +2,10 @@ name: NuGet dependency graph (job summary)
 
 # Shows the dependency graph directly on the pull request's checks page as a
 # native Mermaid diagram -- no artifact download needed. GitHub renders
-# ```mermaid fenced code blocks in job summaries, and nugraph can emit that
-# syntax as plain text (no image rendering involved) by writing to a path
-# ending in .mmd.
+# ```mermaid fenced code blocks in job summaries, and the action writes one
+# there itself when job-summary is enabled. output-path is left unset since
+# no artifact file is needed here -- job-summary would actually default to
+# 'true' in that case anyway, but it's set explicitly below for clarity.
 
 on:
   pull_request:
@@ -20,13 +21,4 @@ jobs:
         uses: Tsabo/nugraph-action@main
         with:
           project-path: ./src/MyApp.sln
-          output-path: artifacts/nugraph/graph.mmd
-
-      - name: Add graph to job summary
-        run: |
-          {
-            echo '### Dependency graph'
-            echo '```mermaid'
-            cat artifacts/nugraph/graph.mmd
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          job-summary: 'true'

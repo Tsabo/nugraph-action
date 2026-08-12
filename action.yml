@@ -5,9 +5,17 @@ inputs:
     description: 'Path to the .sln or .csproj file to analyze'
     required: true
   output-path:
-    description: 'Where to write the generated graph artifact'
+    description: 'Where to write the generated graph artifact (svg/png/pdf/jpg/mmd/mermaid). Leave unset to skip writing an artifact file.'
     required: false
-    default: 'artifacts/nugraph/graph.svg'
+    default: ''
+  job-summary:
+    description: "Append the graph as a Mermaid diagram to the GitHub Actions job summary. Defaults to 'true' when output-path is unset, otherwise 'false' -- set explicitly to override."
+    required: false
+    default: ''
+  job-summary-title:
+    description: 'Heading text shown above the Mermaid diagram in the job summary (only used when job-summary is true)'
+    required: false
+    default: 'Dependency graph'
   ignore:
     description: 'Newline-separated list of package name patterns to ignore, each turned into a separate -i flag (e.g. "System.*")'
     required: false
@@ -49,10 +57,22 @@ runs:
       env:
         PROJECT_PATH: ${{ inputs.project-path }}
         OUTPUT_PATH: ${{ inputs.output-path }}
+        JOB_SUMMARY: ${{ inputs.job-summary }}
+        JOB_SUMMARY_TITLE: ${{ inputs.job-summary-title }}
         IGNORE_PATTERNS: ${{ inputs.ignore }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
       run: |
-        mkdir -p "$(dirname "$OUTPUT_PATH")"
+        if [[ -z "$JOB_SUMMARY" ]]; then
+          # Auto: default to a job summary when there's no artifact to
+          # otherwise show the graph came from.
+          [[ -z "$OUTPUT_PATH" ]] && JOB_SUMMARY="true" || JOB_SUMMARY="false"
+        fi
+
+        if [[ -z "$OUTPUT_PATH" && "$JOB_SUMMARY" != "true" ]]; then
+          echo "::error::Set at least one of 'output-path' or 'job-summary' -- otherwise this action has nothing to do." >&2
+          exit 1
+        fi
+
         ignore_flags=()
         while IFS= read -r pattern; do
           [[ -n "$pattern" ]] && ignore_flags+=(-i "$pattern")
@@ -62,21 +82,37 @@ runs:
         # .mmd/.mermaid, Graphviz DOT text otherwise) -- it never renders an
         # image itself when --output is given. For image extensions, render
         # the Graphviz DOT source locally with Graphviz's `dot` instead.
-        case "${OUTPUT_PATH,,}" in
-          *.svg|*.png|*.pdf|*.jpg|*.jpeg)
-            if ! command -v dot >/dev/null 2>&1; then
-              sudo apt-get update -qq
-              sudo apt-get install -y --no-install-recommends graphviz
-            fi
-            graph_source="$(mktemp --suffix=.gv)"
-            nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$graph_source"
-            render_format="${OUTPUT_PATH##*.}"
-            render_format="${render_format,,}"
-            [[ "$render_format" == "jpeg" ]] && render_format="jpg"
-            dot "-T$render_format" "$graph_source" -o "$OUTPUT_PATH"
-            rm -f "$graph_source"
-            ;;
-          *)
-            nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$OUTPUT_PATH"
-            ;;
-        esac
+
+        if [[ "$JOB_SUMMARY" == "true" ]]; then
+          mermaid_source="$(mktemp --suffix=.mmd)"
+          nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$mermaid_source"
+          {
+            echo "### ${JOB_SUMMARY_TITLE}"
+            echo '```mermaid'
+            cat "$mermaid_source"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$mermaid_source"
+        fi
+
+        if [[ -n "$OUTPUT_PATH" ]]; then
+          mkdir -p "$(dirname "$OUTPUT_PATH")"
+          case "${OUTPUT_PATH,,}" in
+            *.svg|*.png|*.pdf|*.jpg|*.jpeg)
+              if ! command -v dot >/dev/null 2>&1; then
+                sudo apt-get update -qq
+                sudo apt-get install -y --no-install-recommends graphviz
+              fi
+              graph_source="$(mktemp --suffix=.gv)"
+              nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$graph_source"
+              render_format="${OUTPUT_PATH##*.}"
+              render_format="${render_format,,}"
+              [[ "$render_format" == "jpeg" ]] && render_format="jpg"
+              dot "-T$render_format" "$graph_source" -o "$OUTPUT_PATH"
+              rm -f "$graph_source"
+              ;;
+            *)
+              nugraph "$PROJECT_PATH" "${ignore_flags[@]}" $EXTRA_ARGS --output "$OUTPUT_PATH"
+              ;;
+          esac
+        fi

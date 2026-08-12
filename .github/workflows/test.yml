@@ -3,9 +3,9 @@ name: Test action
 # Exercises the composite action against the fixture project in test/Fixture,
 # so every push/PR proves the action still works end to end. The SVG is
 # uploaded as an artifact for download (exercising the Graphviz-rendering
-# path). The job summary embeds the same graph as a native Mermaid diagram
-# instead of an image -- GitHub renders ```mermaid fenced blocks directly,
-# and nugraph can emit that syntax as plain text with no rendering step.
+# path), and job-summary exercises the action's built-in Mermaid job summary
+# in the same run -- GitHub renders ```mermaid fenced blocks directly, and
+# nugraph can emit that syntax as plain text with no rendering step.
 
 on:
   push:
@@ -18,28 +18,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Generate SVG graph from fixture project
+      - name: Generate dependency graph
         uses: ./
         with:
           project-path: test/Fixture/Fixture.csproj
           output-path: artifacts/nugraph/graph.svg
+          job-summary: 'true'
+          job-summary-title: 'Fixture dependency graph'
           dotnet-version: '10.0.x'
-
-      - name: Generate Mermaid graph for job summary
-        uses: ./
-        with:
-          project-path: test/Fixture/Fixture.csproj
-          output-path: artifacts/nugraph/graph.mmd
-          dotnet-version: '10.0.x'
-
-      - name: Add graph to job summary
-        run: |
-          {
-            echo '### Fixture dependency graph'
-            echo '```mermaid'
-            cat artifacts/nugraph/graph.mmd
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4

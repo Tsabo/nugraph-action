@@ -32,6 +32,22 @@ See [examples/basic.yml](examples/basic.yml) for a full manual (`workflow_dispat
 
 nugraph's `--output` option always writes raw graph source text — a Mermaid diagram if `output-path` ends in `.mmd`/`.mermaid`, otherwise Graphviz DOT text — it never renders an image itself. For image extensions (`.svg`, `.png`, `.pdf`, `.jpg`/`.jpeg`), this action renders the Graphviz DOT source into that image locally using Graphviz's `dot` (installed via `apt-get` on the runner if not already present, no external service involved). Mermaid output (`.mmd`/`.mermaid`) is left as raw source text, viewable at [mermaid.live](https://mermaid.live) — this action doesn't render Mermaid diagrams to images. See [0xced/nugraph](https://github.com/0xced/nugraph) for everything nugraph itself supports.
 
+## Job summaries
+
+`job-summary` appends the graph as a native Mermaid diagram to the workflow's job summary — no separate step or artifact needed. It defaults to `'true'` when `output-path` is unset and `'false'` when `output-path` is set, so the minimal setup already gives you a summary:
+
+```yaml
+      - uses: Tsabo/nugraph-action@main
+        with:
+          project-path: ./src/MyApp.sln
+```
+
+Set `job-summary` explicitly to override the default either way — e.g. `job-summary: 'true'` alongside `output-path` to get both an artifact and a summary, or `job-summary: 'false'` with `output-path` set (already the default in that case) to skip the summary.
+
+Use `job-summary-title` to customize the heading text above the diagram (defaults to `Dependency graph`). See [examples/job-summary.yml](examples/job-summary.yml) for a full workflow.
+
+At least one of `output-path` or `job-summary` must end up set — otherwise the action has nothing to do.
+
 ## Ignoring packages
 
 Use `ignore` to exclude packages, one pattern per line — each line becomes its own `-i` flag, so you don't need to remember to repeat `-i` yourself:
