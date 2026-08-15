@@ -20,6 +20,10 @@ inputs:
     description: 'Newline-separated list of package name patterns to ignore, each turned into a separate -i flag (e.g. "System.*")'
     required: false
     default: ''
+  hide-empty-graphs:
+    description: 'Skip projects whose dependency graph has no packages -- no artifact file is written and no job summary section is added for them. Most useful when project-path is a solution and some projects have no NuGet dependencies.'
+    required: false
+    default: 'false'
   extra-args:
     description: 'Additional CLI arguments passed to nugraph, space-separated (values containing spaces are not supported)'
     required: false
@@ -60,110 +64,6 @@ runs:
         JOB_SUMMARY: ${{ inputs.job-summary }}
         JOB_SUMMARY_TITLE: ${{ inputs.job-summary-title }}
         IGNORE_PATTERNS: ${{ inputs.ignore }}
+        HIDE_EMPTY_GRAPHS: ${{ inputs.hide-empty-graphs }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
-      run: |
-        if [[ -z "$JOB_SUMMARY" ]]; then
-          # Auto: default to a job summary when there's no artifact to
-          # otherwise show the graph came from.
-          [[ -z "$OUTPUT_PATH" ]] && JOB_SUMMARY="true" || JOB_SUMMARY="false"
-        fi
-
-        if [[ -z "$OUTPUT_PATH" && "$JOB_SUMMARY" != "true" ]]; then
-          echo "::error::Set at least one of 'output-path' or 'job-summary' -- otherwise this action has nothing to do." >&2
-          exit 1
-        fi
-
-        ignore_flags=()
-        while IFS= read -r pattern; do
-          [[ -n "$pattern" ]] && ignore_flags+=(-i "$pattern")
-        done <<< "$IGNORE_PATTERNS"
-
-        # nugraph has no concept of solution files -- it only understands a
-        # single project (or a directory containing exactly one). Expand a
-        # .sln into its member .csproj/.fsproj/.vbproj entries here and run
-        # nugraph once per project, since that's the only way to get a graph
-        # out of a solution at all. A plain project-path is left untouched
-        # and keeps behaving exactly as before (one file, one summary
-        # section, no name suffix).
-        project_paths=()
-        project_names=()
-        if [[ "${PROJECT_PATH,,}" == *.sln ]]; then
-          is_solution=true
-          sln_dir="$(dirname "$PROJECT_PATH")"
-          while IFS= read -r rel_path; do
-            [[ -z "$rel_path" ]] && continue
-            rel_path="${rel_path//\\//}"
-            project_paths+=("$sln_dir/$rel_path")
-            project_name="$(basename "$rel_path")"
-            project_names+=("${project_name%.*}")
-          done < <(grep '^Project(' "$PROJECT_PATH" | awk -F'"' '{print $6}' | grep -iE '\.(cs|fs|vb)proj$')
-
-          if [[ ${#project_paths[@]} -eq 0 ]]; then
-            echo "::error::No .csproj/.fsproj/.vbproj projects found in solution file '$PROJECT_PATH'." >&2
-            exit 1
-          fi
-        else
-          is_solution=false
-          project_paths=("$PROJECT_PATH")
-          project_names=("")
-        fi
-
-        # nugraph's --output always writes raw graph source (Mermaid text for
-        # .mmd/.mermaid, Graphviz DOT text otherwise) -- it never renders an
-        # image itself when --output is given. For image extensions, render
-        # the Graphviz DOT source locally with Graphviz's `dot` instead.
-        need_dot=false
-        if [[ -n "$OUTPUT_PATH" ]]; then
-          case "${OUTPUT_PATH,,}" in
-            *.svg|*.png|*.pdf|*.jpg|*.jpeg) need_dot=true ;;
-          esac
-          if [[ "$need_dot" == "true" ]] && ! command -v dot >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends graphviz
-          fi
-        fi
-
-        for i in "${!project_paths[@]}"; do
-          project_path="${project_paths[$i]}"
-          project_name="${project_names[$i]}"
-
-          if [[ "$JOB_SUMMARY" == "true" ]]; then
-            mermaid_source="$(mktemp --suffix=.mmd)"
-            nugraph "$project_path" "${ignore_flags[@]}" $EXTRA_ARGS --output "$mermaid_source"
-            {
-              if [[ -n "$project_name" ]]; then
-                echo "### ${JOB_SUMMARY_TITLE} -- ${project_name}"
-              else
-                echo "### ${JOB_SUMMARY_TITLE}"
-              fi
-              echo '```mermaid'
-              cat "$mermaid_source"
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-            rm -f "$mermaid_source"
-          fi
-
-          if [[ -n "$OUTPUT_PATH" ]]; then
-            # For a solution, suffix each project's output with its name
-            # (graph.svg -> graph.MyApp.svg) so per-project files don't
-            # collide -- applied unconditionally for .sln input so filenames
-            # stay predictable even if a project is later added or removed.
-            if [[ "$is_solution" == "true" ]]; then
-              output_path="${OUTPUT_PATH%.*}.${project_name}.${OUTPUT_PATH##*.}"
-            else
-              output_path="$OUTPUT_PATH"
-            fi
-            mkdir -p "$(dirname "$output_path")"
-            if [[ "$need_dot" == "true" ]]; then
-              graph_source="$(mktemp --suffix=.gv)"
-              nugraph "$project_path" "${ignore_flags[@]}" $EXTRA_ARGS --output "$graph_source"
-              render_format="${output_path##*.}"
-              render_format="${render_format,,}"
-              [[ "$render_format" == "jpeg" ]] && render_format="jpg"
-              dot "-T$render_format" "$graph_source" -o "$output_path"
-              rm -f "$graph_source"
-            else
-              nugraph "$project_path" "${ignore_flags[@]}" $EXTRA_ARGS --output "$output_path"
-            fi
-          fi
-        done
+      run: "$GITHUB_ACTION_PATH/scripts/generate-graph.sh"

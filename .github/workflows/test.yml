@@ -8,9 +8,15 @@ name: Test action
 # nugraph can emit that syntax as plain text with no rendering step.
 #
 # A second job repeats this against test/Fixture.sln, a solution referencing
-# both test/Fixture and test/FixtureTwo, to exercise the action's solution
-# expansion (one nugraph run per project, per-project output filenames and
-# job summary sections) since nugraph itself has no concept of .sln files.
+# test/Fixture, test/FixtureTwo and test/FixtureEmpty, to exercise the
+# action's solution expansion (one nugraph run per project, per-project
+# output filenames and job summary sections) since nugraph itself has no
+# concept of .sln files.
+#
+# A third job repeats the solution run with hide-empty-graphs enabled, to
+# verify that test/FixtureEmpty (which has no PackageReference at all, so
+# its graph is always empty) is skipped -- no output file and no job summary
+# section -- while Fixture and FixtureTwo are unaffected.
 
 on:
   push:
@@ -64,5 +70,35 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fixture-solution-dependency-graphs
+          path: artifacts/nugraph/*.svg
+          if-no-files-found: error
+
+  generate-fixture-solution-graph-hide-empty:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate dependency graph
+        uses: ./
+        with:
+          project-path: test/Fixture.sln
+          output-path: artifacts/nugraph/graph.svg
+          job-summary: 'true'
+          job-summary-title: 'Solution dependency graph (empty graphs hidden)'
+          hide-empty-graphs: 'true'
+          dotnet-version: '10.0.x'
+
+      - name: Verify empty project's graph was skipped, others were not
+        shell: bash
+        run: |
+          test -f artifacts/nugraph/graph.Fixture.svg
+          test -f artifacts/nugraph/graph.FixtureTwo.svg
+          test ! -f artifacts/nugraph/graph.FixtureEmpty.svg
+
+      - name: Upload graph artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-solution-dependency-graphs-hide-empty
           path: artifacts/nugraph/*.svg
           if-no-files-found: error
