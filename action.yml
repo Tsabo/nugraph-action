@@ -66,4 +66,4 @@ runs:
         IGNORE_PATTERNS: ${{ inputs.ignore }}
         HIDE_EMPTY_GRAPHS: ${{ inputs.hide-empty-graphs }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
-      run: "$GITHUB_ACTION_PATH/scripts/generate-graph.sh"
+      run: bash "$GITHUB_ACTION_PATH/scripts/generate-graph.sh"
