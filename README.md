@@ -28,6 +28,15 @@ jobs:
 
 See [examples/basic.yml](examples/basic.yml) for a full manual (`workflow_dispatch`) workflow you can copy into a consuming repo's `.github/workflows/` directory.
 
+## Solution files
+
+[nugraph](https://github.com/0xced/nugraph) itself has no concept of `.sln` files -- it only understands a single project (or a directory containing exactly one) and errors out ("Solution files are not supported") if you point it at a solution directly. This action works around that: when `project-path` ends in `.sln`, it parses the solution, finds every `.csproj`/`.fsproj`/`.vbproj` it references, and runs nugraph once per project.
+
+This changes two things for solution input specifically (a plain project path is unaffected and behaves exactly as before):
+
+- **Job summary**: each project gets its own `### <job-summary-title> -- <ProjectName>` heading and Mermaid block, all appended to the same job summary.
+- **`output-path`**: each project's graph is written next to the configured path with the project name inserted before the extension, e.g. `artifacts/nugraph/graph.svg` becomes `artifacts/nugraph/graph.MyApp.svg`, `artifacts/nugraph/graph.MyApp.Tests.svg`, etc. Use a glob (e.g. `artifacts/nugraph/*.svg`) when uploading these as a workflow artifact, since the exact filenames depend on the projects in the solution.
+
 ## Output formats
 
 nugraph's `--output` option always writes raw graph source text — a Mermaid diagram if `output-path` ends in `.mmd`/`.mermaid`, otherwise Graphviz DOT text — it never renders an image itself. For image extensions (`.svg`, `.png`, `.pdf`, `.jpg`/`.jpeg`), this action renders the Graphviz DOT source into that image locally using Graphviz's `dot` (installed via `apt-get` on the runner if not already present, no external service involved). Mermaid output (`.mmd`/`.mermaid`) is left as raw source text, viewable at [mermaid.live](https://mermaid.live) — this action doesn't render Mermaid diagrams to images. See [0xced/nugraph](https://github.com/0xced/nugraph) for everything nugraph itself supports.

@@ -43,5 +43,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nuget-dependency-graph
-          path: ${{ inputs.output-path }}
+          # project-path may be a .sln, in which case the action writes one
+          # file per project with the project name inserted before the
+          # extension (e.g. graph.svg -> graph.MyApp.svg), so upload the
+          # whole output directory rather than the exact output-path.
+          path: artifacts/nugraph/
           if-no-files-found: error

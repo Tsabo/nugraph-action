@@ -6,6 +6,11 @@ name: Test action
 # path), and job-summary exercises the action's built-in Mermaid job summary
 # in the same run -- GitHub renders ```mermaid fenced blocks directly, and
 # nugraph can emit that syntax as plain text with no rendering step.
+#
+# A second job repeats this against test/Fixture.sln, a solution referencing
+# both test/Fixture and test/FixtureTwo, to exercise the action's solution
+# expansion (one nugraph run per project, per-project output filenames and
+# job summary sections) since nugraph itself has no concept of .sln files.
 
 on:
   push:
@@ -32,4 +37,32 @@ jobs:
         with:
           name: fixture-dependency-graph
           path: artifacts/nugraph/graph.svg
+          if-no-files-found: error
+
+  generate-fixture-solution-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate dependency graph
+        uses: ./
+        with:
+          project-path: test/Fixture.sln
+          output-path: artifacts/nugraph/graph.svg
+          job-summary: 'true'
+          job-summary-title: 'Solution dependency graph'
+          dotnet-version: '10.0.x'
+
+      - name: Verify per-project output files were created
+        shell: bash
+        run: |
+          test -f artifacts/nugraph/graph.Fixture.svg
+          test -f artifacts/nugraph/graph.FixtureTwo.svg
+
+      - name: Upload graph artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-solution-dependency-graphs
+          path: artifacts/nugraph/*.svg
           if-no-files-found: error
