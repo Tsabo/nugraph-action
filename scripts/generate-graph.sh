@@ -26,6 +26,7 @@ parse_ignore_flags() {
   while IFS= read -r pattern; do
     [[ -n "$pattern" ]] && ignore_flags+=(-i "$pattern")
   done <<< "$IGNORE_PATTERNS"
+  return 0
 }
 
 # nugraph has no concept of solution files -- it only understands a single
