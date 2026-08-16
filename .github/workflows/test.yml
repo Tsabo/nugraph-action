@@ -114,12 +114,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Verified against the raw .mmd output files rather than the job
+      # summary -- GITHUB_STEP_SUMMARY is scoped per step (each step gets
+      # its own fresh file that the runner only stitches together for
+      # display), so a later step can't read what an earlier step wrote to
+      # it.
       - name: Generate dependency graph (custom styling)
         uses: ./
         with:
           project-path: test/Fixture/Fixture.csproj
-          job-summary: 'true'
-          job-summary-title: 'Fixture dependency graph (custom styling)'
+          output-path: artifacts/nugraph/custom.mmd
           title: 'Custom styling test title'
           include-versions: 'true'
           direction: 'TopToBottom'
@@ -130,23 +134,20 @@ jobs:
         uses: ./
         with:
           project-path: test/Fixture/Fixture.csproj
-          job-summary: 'true'
-          job-summary-title: 'Fixture dependency graph (blank title)'
+          output-path: artifacts/nugraph/blank-title.mmd
           title: ''
           dotnet-version: '10.0.x'
 
       - name: Verify custom styling was applied
         shell: bash
         run: |
-          awk '/^### Fixture dependency graph \(custom styling\)/{flag=1} /^### Fixture dependency graph \(blank title\)/{flag=0} flag' "$GITHUB_STEP_SUMMARY" > /tmp/custom-section.txt
-          grep -q '^title: Custom styling test title$' /tmp/custom-section.txt
-          grep -q '^graph TB$' /tmp/custom-section.txt
-          grep -Eq 'Serilog/[0-9]+\.[0-9]+\.[0-9]+' /tmp/custom-section.txt
-          ! grep -q '^click ' /tmp/custom-section.txt
+          grep -q '^title: Custom styling test title$' artifacts/nugraph/custom.mmd
+          grep -q '^graph TB$' artifacts/nugraph/custom.mmd
+          grep -Eq 'Serilog/[0-9]+\.[0-9]+\.[0-9]+' artifacts/nugraph/custom.mmd
+          ! grep -q '^click ' artifacts/nugraph/custom.mmd
 
       - name: Verify blank title omits the title block
         shell: bash
         run: |
-          awk '/^### Fixture dependency graph \(blank title\)/{flag=1} flag' "$GITHUB_STEP_SUMMARY" > /tmp/blank-section.txt
-          ! grep -q '^title:' /tmp/blank-section.txt
-          grep -q '^graph LR$' /tmp/blank-section.txt
+          ! grep -q '^title:' artifacts/nugraph/blank-title.mmd
+          grep -q '^graph LR$' artifacts/nugraph/blank-title.mmd
