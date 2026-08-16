@@ -17,6 +17,11 @@ name: Test action
 # verify that test/FixtureEmpty (which has no PackageReference at all, so
 # its graph is always empty) is skipped -- no output file and no job summary
 # section -- while Fixture and FixtureTwo are unaffected.
+#
+# A fourth job exercises the graph-styling inputs (title, include-versions,
+# direction, no-links) against test/Fixture, and separately exercises the
+# title: '' vs. unset distinction (see README's "Customizing the graph"),
+# by inspecting the raw Mermaid text each run appends to the job summary.
 
 on:
   push:
@@ -102,3 +107,46 @@ jobs:
           name: fixture-solution-dependency-graphs-hide-empty
           path: artifacts/nugraph/*.svg
           if-no-files-found: error
+
+  generate-fixture-custom-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate dependency graph (custom styling)
+        uses: ./
+        with:
+          project-path: test/Fixture/Fixture.csproj
+          job-summary: 'true'
+          job-summary-title: 'Fixture dependency graph (custom styling)'
+          title: 'Custom styling test title'
+          include-versions: 'true'
+          direction: 'TopToBottom'
+          no-links: 'true'
+          dotnet-version: '10.0.x'
+
+      - name: Generate dependency graph (blank title)
+        uses: ./
+        with:
+          project-path: test/Fixture/Fixture.csproj
+          job-summary: 'true'
+          job-summary-title: 'Fixture dependency graph (blank title)'
+          title: ''
+          dotnet-version: '10.0.x'
+
+      - name: Verify custom styling was applied
+        shell: bash
+        run: |
+          awk '/^### Fixture dependency graph \(custom styling\)/{flag=1} /^### Fixture dependency graph \(blank title\)/{flag=0} flag' "$GITHUB_STEP_SUMMARY" > /tmp/custom-section.txt
+          grep -q '^title: Custom styling test title$' /tmp/custom-section.txt
+          grep -q '^graph TB$' /tmp/custom-section.txt
+          grep -Eq 'Serilog/[0-9]+\.[0-9]+\.[0-9]+' /tmp/custom-section.txt
+          ! grep -q '^click ' /tmp/custom-section.txt
+
+      - name: Verify blank title omits the title block
+        shell: bash
+        run: |
+          awk '/^### Fixture dependency graph \(blank title\)/{flag=1} flag' "$GITHUB_STEP_SUMMARY" > /tmp/blank-section.txt
+          ! grep -q '^title:' /tmp/blank-section.txt
+          grep -q '^graph LR$' /tmp/blank-section.txt
