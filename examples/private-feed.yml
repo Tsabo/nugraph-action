@@ -41,7 +41,7 @@ jobs:
             --store-password-in-clear-text
 
       - name: Generate graph
-        uses: Tsabo/nugraph-action@main
+        uses: Tsabo/nugraph-action@master
         with:
           project-path: ${{ inputs.project-path }}
           output-path: ${{ inputs.output-path }}

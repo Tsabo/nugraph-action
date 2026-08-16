@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: Tsabo/nugraph-action@main
+      - uses: Tsabo/nugraph-action@master
         with:
           project-path: ./src/MyApp.sln
           output-path: artifacts/nugraph/graph.svg
@@ -46,7 +46,7 @@ nugraph's `--output` option always writes raw graph source text — a Mermaid di
 `job-summary` appends the graph as a native Mermaid diagram to the workflow's job summary — no separate step or artifact needed. It defaults to `'true'` when `output-path` is unset and `'false'` when `output-path` is set, so the minimal setup already gives you a summary:
 
 ```yaml
-      - uses: Tsabo/nugraph-action@main
+      - uses: Tsabo/nugraph-action@master
         with:
           project-path: ./src/MyApp.sln
 ```
@@ -62,7 +62,7 @@ At least one of `output-path` or `job-summary` must end up set — otherwise the
 Use `ignore` to exclude packages, one pattern per line — each line becomes its own `-i` flag, so you don't need to remember to repeat `-i` yourself:
 
 ```yaml
-      - uses: Tsabo/nugraph-action@main
+      - uses: Tsabo/nugraph-action@master
         with:
           project-path: ./src/MyApp.sln
           output-path: artifacts/nugraph/graph.svg
@@ -74,7 +74,7 @@ Use `ignore` to exclude packages, one pattern per line — each line becomes its
 Any other nugraph flag (e.g. `-f`/`--framework`, `--no-links`) can be passed through `extra-args`:
 
 ```yaml
-      - uses: Tsabo/nugraph-action@main
+      - uses: Tsabo/nugraph-action@master
         with:
           project-path: ./src/MyApp.sln
           output-path: artifacts/nugraph/graph.png
@@ -101,7 +101,7 @@ classDef default fill:aquamarine,stroke:#009061,color:#333333
 Set `hide-empty-graphs: 'true'` to skip these -- no output file is written and no job summary section is added for a project whose graph is empty:
 
 ```yaml
-      - uses: Tsabo/nugraph-action@main
+      - uses: Tsabo/nugraph-action@master
         with:
           project-path: ./src/MyApp.sln
           hide-empty-graphs: 'true'
@@ -111,7 +111,7 @@ This is most useful with a `.sln` `project-path` where only some projects have d
 
 ## Private NuGet feeds
 
-nugraph calls `dotnet restore` internally, so it honors whatever NuGet sources are already configured on the runner — either a `NuGet.config` committed to the consuming repo, or a source registered by an earlier step in the same job (e.g. `dotnet nuget add source ...`). This action doesn't need to know about your feeds or credentials; just add a source-registration step before the `uses: Tsabo/nugraph-action@main` step, the same way you would before any other `dotnet restore`/`build` step. See [examples/private-feed.yml](examples/private-feed.yml) for an example using GitHub Packages.
+nugraph calls `dotnet restore` internally, so it honors whatever NuGet sources are already configured on the runner — either a `NuGet.config` committed to the consuming repo, or a source registered by an earlier step in the same job (e.g. `dotnet nuget add source ...`). This action doesn't need to know about your feeds or credentials; just add a source-registration step before the `uses: Tsabo/nugraph-action@master` step, the same way you would before any other `dotnet restore`/`build` step. See [examples/private-feed.yml](examples/private-feed.yml) for an example using GitHub Packages.
 
 ## Notes
 
