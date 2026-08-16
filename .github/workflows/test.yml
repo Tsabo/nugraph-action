@@ -20,8 +20,11 @@ name: Test action
 #
 # A fourth job exercises the graph-styling inputs (title, include-versions,
 # direction, no-links) against test/Fixture, and separately exercises the
-# title: '' vs. unset distinction (see README's "Customizing the graph"),
-# by inspecting the raw Mermaid text each run appends to the job summary.
+# title: '' vs. unset distinction (see README's "Customizing the graph").
+# Both runs also enable job-summary for visual inspection on the checks
+# page, but are verified against their .mmd output files instead, since
+# GITHUB_STEP_SUMMARY is scoped per step -- a later step can't read what an
+# earlier step in the same job wrote to it.
 
 on:
   push:
@@ -124,6 +127,8 @@ jobs:
         with:
           project-path: test/Fixture/Fixture.csproj
           output-path: artifacts/nugraph/custom.mmd
+          job-summary: 'true'
+          job-summary-title: 'Fixture dependency graph (custom styling)'
           title: 'Custom styling test title'
           include-versions: 'true'
           direction: 'TopToBottom'
@@ -135,6 +140,8 @@ jobs:
         with:
           project-path: test/Fixture/Fixture.csproj
           output-path: artifacts/nugraph/blank-title.mmd
+          job-summary: 'true'
+          job-summary-title: 'Fixture dependency graph (blank title)'
           title: ''
           dotnet-version: '10.0.x'
 
