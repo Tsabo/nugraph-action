@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Generate dependency graph
         uses: ./
@@ -47,7 +47,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Upload graph artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fixture-dependency-graph
           path: artifacts/nugraph/graph.svg
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Generate dependency graph
         uses: ./
@@ -75,7 +75,7 @@ jobs:
           test -f artifacts/nugraph/graph.FixtureTwo.svg
 
       - name: Upload graph artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fixture-solution-dependency-graphs
           path: artifacts/nugraph/*.svg
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Generate dependency graph
         uses: ./
@@ -105,7 +105,7 @@ jobs:
           test ! -f artifacts/nugraph/graph.FixtureEmpty.svg
 
       - name: Upload graph artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fixture-solution-dependency-graphs-hide-empty
           path: artifacts/nugraph/*.svg
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Verified against the raw .mmd output files rather than the job
       # summary -- GITHUB_STEP_SUMMARY is scoped per step (each step gets
