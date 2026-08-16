@@ -17,6 +17,14 @@ name: Test action
 # verify that test/FixtureEmpty (which has no PackageReference at all, so
 # its graph is always empty) is skipped -- no output file and no job summary
 # section -- while Fixture and FixtureTwo are unaffected.
+#
+# A fourth job exercises the graph-styling inputs (title, include-versions,
+# direction, no-links) against test/Fixture, and separately exercises the
+# title: '' vs. unset distinction (see README's "Customizing the graph").
+# Both runs also enable job-summary for visual inspection on the checks
+# page, but are verified against their .mmd output files instead, since
+# GITHUB_STEP_SUMMARY is scoped per step -- a later step can't read what an
+# earlier step in the same job wrote to it.
 
 on:
   push:
@@ -102,3 +110,52 @@ jobs:
           name: fixture-solution-dependency-graphs-hide-empty
           path: artifacts/nugraph/*.svg
           if-no-files-found: error
+
+  generate-fixture-custom-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Verified against the raw .mmd output files rather than the job
+      # summary -- GITHUB_STEP_SUMMARY is scoped per step (each step gets
+      # its own fresh file that the runner only stitches together for
+      # display), so a later step can't read what an earlier step wrote to
+      # it.
+      - name: Generate dependency graph (custom styling)
+        uses: ./
+        with:
+          project-path: test/Fixture/Fixture.csproj
+          output-path: artifacts/nugraph/custom.mmd
+          job-summary: 'true'
+          job-summary-title: 'Fixture dependency graph (custom styling)'
+          title: 'Custom styling test title'
+          include-versions: 'true'
+          direction: 'TopToBottom'
+          no-links: 'true'
+          dotnet-version: '10.0.x'
+
+      - name: Generate dependency graph (blank title and versions)
+        uses: ./
+        with:
+          project-path: test/Fixture/Fixture.csproj
+          output-path: artifacts/nugraph/blank-title.mmd
+          job-summary: 'true'
+          job-summary-title: 'Fixture dependency graph (blank title)'
+          title: ''
+          include-versions: 'true'
+          dotnet-version: '10.0.x'
+
+      - name: Verify custom styling was applied
+        shell: bash
+        run: |
+          grep -q '^title: Custom styling test title$' artifacts/nugraph/custom.mmd
+          grep -q '^graph TB$' artifacts/nugraph/custom.mmd
+          grep -Eq 'Serilog/[0-9]+\.[0-9]+\.[0-9]+' artifacts/nugraph/custom.mmd
+          ! grep -q '^click ' artifacts/nugraph/custom.mmd
+
+      - name: Verify blank title omits the title block
+        shell: bash
+        run: |
+          ! grep -q '^title:' artifacts/nugraph/blank-title.mmd
+          grep -q '^graph LR$' artifacts/nugraph/blank-title.mmd

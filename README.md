@@ -10,6 +10,7 @@ For local/command-line usage, install and run nugraph directly per its own docs 
 - A manual workflow example in [examples/basic.yml](examples/basic.yml)
 - A private-feed variant in [examples/private-feed.yml](examples/private-feed.yml)
 - A pull request job-summary variant in [examples/job-summary.yml](examples/job-summary.yml)
+- A custom graph-styling variant in [examples/custom-graph.yml](examples/custom-graph.yml)
 
 ## Usage as a GitHub Action
 
@@ -57,6 +58,30 @@ Use `job-summary-title` to customize the heading text above the diagram (default
 
 At least one of `output-path` or `job-summary` must end up set — otherwise the action has nothing to do.
 
+## Customizing the graph
+
+A few nugraph options are exposed as dedicated inputs rather than requiring `extra-args`:
+
+- `title` -- the title embedded in the graph itself (not the job summary heading, see `job-summary-title` above). Left unset, nugraph applies its own default (`Dependency graph of [SOURCE]`). Set it to a specific string for a custom title, e.g. `title: 'MyApp dependencies'`.
+
+  To omit the title entirely, set `title: ''` (explicitly empty) -- this is different from leaving `title` unset. Because a GitHub Actions input that's left out of `with:` and one explicitly set to `''` are otherwise indistinguishable, this action's default for `title` is actually the sentinel value `::unset::` rather than `''`; only an explicit empty string triggers "no title", while leaving `title` out entirely keeps nugraph's own default. You won't see `::unset::` unless you pass it yourself (don't), and it never reaches nugraph.
+
+- `include-versions: 'true'` -- include package versions in the graph nodes, e.g. `Serilog/4.3.0` instead of `Serilog`.
+- `direction` -- `LeftToRight` (nugraph's default, recommended for large graphs) or `TopToBottom` (good for small graphs).
+- `no-links: 'true'` -- remove clickable links from the graph. Useful to reduce its size if Mermaid Live Editor returns "Maximum text size in diagram exceeded".
+
+```yaml
+      - uses: Tsabo/nugraph-action@master
+        with:
+          project-path: ./src/MyApp.sln
+          output-path: artifacts/nugraph/graph.svg
+          title: 'MyApp dependencies'
+          include-versions: 'true'
+          direction: 'TopToBottom'
+```
+
+See [examples/custom-graph.yml](examples/custom-graph.yml) for a full workflow.
+
 ## Ignoring packages
 
 Use `ignore` to exclude packages, one pattern per line — each line becomes its own `-i` flag, so you don't need to remember to repeat `-i` yourself:
@@ -71,14 +96,14 @@ Use `ignore` to exclude packages, one pattern per line — each line becomes its
             Humanizer.Core.*
 ```
 
-Any other nugraph flag (e.g. `-f`/`--framework`, `--no-links`) can be passed through `extra-args`:
+Any other nugraph flag not covered by a dedicated input (e.g. `-f`/`--framework`) can be passed through `extra-args`:
 
 ```yaml
       - uses: Tsabo/nugraph-action@master
         with:
           project-path: ./src/MyApp.sln
           output-path: artifacts/nugraph/graph.png
-          extra-args: '--no-links'
+          extra-args: '--framework net8.0'
 ```
 
 ## Hiding empty graphs

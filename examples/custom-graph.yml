@@ -1,0 +1,33 @@
+name: NuGet dependency graph (custom styling)
+
+# Demonstrates the graph-styling inputs: title, include-versions, direction
+# and no-links. See "Customizing the graph" in the README for details --
+# notably, to omit the title entirely (rather than falling back to nugraph's
+# own default), set title: '' explicitly rather than leaving it unset.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate graph
+        uses: Tsabo/nugraph-action@master
+        with:
+          project-path: ./src/MyApp.sln
+          output-path: artifacts/nugraph/graph.svg
+          title: 'MyApp dependencies'
+          include-versions: 'true'
+          direction: 'TopToBottom'
+          no-links: 'true'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-dependency-graph
+          path: artifacts/nugraph/
+          if-no-files-found: error
