@@ -10,6 +10,7 @@ For local/command-line usage, install and run nugraph directly per its own docs 
 - A manual workflow example in [examples/basic.yml](examples/basic.yml)
 - A private-feed variant in [examples/private-feed.yml](examples/private-feed.yml)
 - A pull request job-summary variant in [examples/job-summary.yml](examples/job-summary.yml)
+- A custom graph-styling variant in [examples/custom-graph.yml](examples/custom-graph.yml)
 
 ## Usage as a GitHub Action
 
@@ -78,6 +79,8 @@ A few nugraph options are exposed as dedicated inputs rather than requiring `ext
           include-versions: 'true'
           direction: 'TopToBottom'
 ```
+
+See [examples/custom-graph.yml](examples/custom-graph.yml) for a full workflow.
 
 ## Ignoring packages
 
