@@ -17,9 +17,9 @@ inputs:
     required: false
     default: 'Dependency graph'
   title:
-    description: "Title embedded in the generated graph itself, passed to nugraph's -t/--title. Leave unset to use nugraph's default ('Dependency graph of [SOURCE]')."
+    description: "Title embedded in the generated graph itself, passed to nugraph's -t/--title. Leave unset to use nugraph's default ('Dependency graph of [SOURCE]'). Set explicitly to '' (empty string) to omit the title entirely."
     required: false
-    default: ''
+    default: '::unset::'
   include-versions:
     description: 'Include package versions in the dependency graph nodes, e.g. Serilog@4.3.0 instead of Serilog'
     required: false

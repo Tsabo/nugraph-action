@@ -7,6 +7,15 @@
 # GITHUB_STEP_SUMMARY from the runner environment.
 set -eo pipefail
 
+# Matches the title input's default in action.yml. A composite action input
+# left unset falls back to its declared default, indistinguishable from the
+# user explicitly passing an empty string -- both arrive here as TITLE="".
+# Defaulting title to this sentinel instead of "" lets the two be told apart:
+# unset (sentinel) omits -t so nugraph applies its own default title, while
+# an explicit empty string is passed through as -t "" so nugraph omits the
+# title entirely.
+readonly TITLE_UNSET='::unset::'
+
 resolve_job_summary_default() {
   if [[ -z "$JOB_SUMMARY" ]]; then
     # Auto: default to a job summary when there's no artifact to
@@ -35,10 +44,11 @@ parse_ignore_flags() {
 # word-split unquoted.
 build_common_flags() {
   common_flags=()
-  [[ -n "$TITLE" ]] && common_flags+=(-t "$TITLE")
+  [[ "$TITLE" != "$TITLE_UNSET" ]] && common_flags+=(-t "$TITLE")
   [[ "$INCLUDE_VERSIONS" == "true" ]] && common_flags+=(-s)
   [[ -n "$DIRECTION" ]] && common_flags+=(-d "$DIRECTION")
   [[ "$NO_LINKS" == "true" ]] && common_flags+=(--no-links)
+  return 0
 }
 
 # nugraph has no concept of solution files -- it only understands a single
