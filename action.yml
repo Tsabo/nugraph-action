@@ -1,5 +1,8 @@
 name: 'NuGet dependency graph'
 description: 'Generate a NuGet dependency graph for a .NET solution or project using nugraph'
+branding:
+  icon: 'package'
+  color: 'blue'
 inputs:
   project-path:
     description: 'Path to the .sln or .csproj file to analyze'
