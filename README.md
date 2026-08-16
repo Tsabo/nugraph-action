@@ -1,5 +1,10 @@
 # nugraph-action
 
+[![CI](https://github.com/Tsabo/nugraph-action/actions/workflows/test.yml/badge.svg)](https://github.com/Tsabo/nugraph-action/actions/workflows/test.yml)
+[![GitHub release](https://img.shields.io/github/v/release/Tsabo/nugraph-action)](https://github.com/Tsabo/nugraph-action/releases)
+[![Marketplace](https://img.shields.io/badge/Marketplace-NuGet%20dependency%20graph-blue?logo=github)](https://github.com/marketplace/actions/nuget-dependency-graph)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 This repository provides a reusable GitHub Action and workflow example for generating a NuGet dependency graph from a .NET solution or project by using [0xced/nugraph](https://github.com/0xced/nugraph).
 
 For local/command-line usage, install and run nugraph directly per its own docs — see [0xced/nugraph](https://github.com/0xced/nugraph).

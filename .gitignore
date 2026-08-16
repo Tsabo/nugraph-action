@@ -49,3 +49,6 @@ desktop.ini
 
 # Logs
 *.log
+
+# Local-only scripts (not for the repo)
+scripts/local/
