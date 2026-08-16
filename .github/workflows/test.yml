@@ -135,7 +135,7 @@ jobs:
           no-links: 'true'
           dotnet-version: '10.0.x'
 
-      - name: Generate dependency graph (blank title)
+      - name: Generate dependency graph (blank title and versions)
         uses: ./
         with:
           project-path: test/Fixture/Fixture.csproj
@@ -143,6 +143,7 @@ jobs:
           job-summary: 'true'
           job-summary-title: 'Fixture dependency graph (blank title)'
           title: ''
+          include-versions: 'true'
           dotnet-version: '10.0.x'
 
       - name: Verify custom styling was applied
