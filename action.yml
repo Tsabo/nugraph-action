@@ -16,6 +16,22 @@ inputs:
     description: 'Heading text shown above the Mermaid diagram in the job summary (only used when job-summary is true)'
     required: false
     default: 'Dependency graph'
+  title:
+    description: "Title embedded in the generated graph itself, passed to nugraph's -t/--title. Leave unset to use nugraph's default ('Dependency graph of [SOURCE]')."
+    required: false
+    default: ''
+  include-versions:
+    description: 'Include package versions in the dependency graph nodes, e.g. Serilog@4.3.0 instead of Serilog'
+    required: false
+    default: 'false'
+  direction:
+    description: "The direction of the dependency graph, possible values are 'LeftToRight' (recommended for large graphs) and 'TopToBottom' (good for small graphs). Leave unset to use nugraph's default (LeftToRight)."
+    required: false
+    default: ''
+  no-links:
+    description: 'Remove clickable links from the dependency graph. Can be useful to reduce the size of the graph if it becomes too large and Mermaid Live Editor is returning "Maximum text size in diagram exceeded"'
+    required: false
+    default: 'false'
   ignore:
     description: 'Newline-separated list of package name patterns to ignore, each turned into a separate -i flag (e.g. "System.*")'
     required: false
@@ -63,6 +79,10 @@ runs:
         OUTPUT_PATH: ${{ inputs.output-path }}
         JOB_SUMMARY: ${{ inputs.job-summary }}
         JOB_SUMMARY_TITLE: ${{ inputs.job-summary-title }}
+        TITLE: ${{ inputs.title }}
+        INCLUDE_VERSIONS: ${{ inputs.include-versions }}
+        DIRECTION: ${{ inputs.direction }}
+        NO_LINKS: ${{ inputs.no-links }}
         IGNORE_PATTERNS: ${{ inputs.ignore }}
         HIDE_EMPTY_GRAPHS: ${{ inputs.hide-empty-graphs }}
         EXTRA_ARGS: ${{ inputs.extra-args }}

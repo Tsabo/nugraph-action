@@ -2,8 +2,9 @@
 # Generates a NuGet dependency graph via nugraph, invoked from the
 # "Generate dependency graph" step in action.yml. Reads its configuration
 # from environment variables set by that step (PROJECT_PATH, OUTPUT_PATH,
-# JOB_SUMMARY, JOB_SUMMARY_TITLE, IGNORE_PATTERNS, HIDE_EMPTY_GRAPHS,
-# EXTRA_ARGS) plus GITHUB_STEP_SUMMARY from the runner environment.
+# JOB_SUMMARY, JOB_SUMMARY_TITLE, TITLE, INCLUDE_VERSIONS, DIRECTION,
+# NO_LINKS, IGNORE_PATTERNS, HIDE_EMPTY_GRAPHS, EXTRA_ARGS) plus
+# GITHUB_STEP_SUMMARY from the runner environment.
 set -eo pipefail
 
 resolve_job_summary_default() {
@@ -27,6 +28,17 @@ parse_ignore_flags() {
     [[ -n "$pattern" ]] && ignore_flags+=(-i "$pattern")
   done <<< "$IGNORE_PATTERNS"
   return 0
+}
+
+# Passed as an array (rather than folded into EXTRA_ARGS) so values
+# containing spaces -- namely TITLE -- work, unlike extra-args which is
+# word-split unquoted.
+build_common_flags() {
+  common_flags=()
+  [[ -n "$TITLE" ]] && common_flags+=(-t "$TITLE")
+  [[ "$INCLUDE_VERSIONS" == "true" ]] && common_flags+=(-s)
+  [[ -n "$DIRECTION" ]] && common_flags+=(-d "$DIRECTION")
+  [[ "$NO_LINKS" == "true" ]] && common_flags+=(--no-links)
 }
 
 # nugraph has no concept of solution files -- it only understands a single
@@ -106,14 +118,14 @@ write_output() {
   if [[ "$need_dot" == "true" ]]; then
     local graph_source render_format
     graph_source="$(mktemp --suffix=.gv)"
-    nugraph "$project_path" "${ignore_flags[@]}" $EXTRA_ARGS --output "$graph_source"
+    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $EXTRA_ARGS --output "$graph_source"
     render_format="${output_path##*.}"
     render_format="${render_format,,}"
     [[ "$render_format" == "jpeg" ]] && render_format="jpg"
     dot "-T$render_format" "$graph_source" -o "$output_path"
     rm -f "$graph_source"
   else
-    nugraph "$project_path" "${ignore_flags[@]}" $EXTRA_ARGS --output "$output_path"
+    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $EXTRA_ARGS --output "$output_path"
   fi
 }
 
@@ -126,7 +138,7 @@ process_project() {
   local mermaid_source=""
   if [[ "$JOB_SUMMARY" == "true" || "$HIDE_EMPTY_GRAPHS" == "true" ]]; then
     mermaid_source="$(mktemp --suffix=.mmd)"
-    nugraph "$project_path" "${ignore_flags[@]}" $EXTRA_ARGS --output "$mermaid_source"
+    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $EXTRA_ARGS --output "$mermaid_source"
   fi
 
   if [[ "$HIDE_EMPTY_GRAPHS" == "true" ]] && is_empty_graph "$mermaid_source"; then
@@ -157,6 +169,7 @@ main() {
   resolve_job_summary_default
   validate_inputs
   parse_ignore_flags
+  build_common_flags
   expand_projects
   detect_dot_requirement
 
