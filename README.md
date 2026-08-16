@@ -57,6 +57,8 @@ nugraph's `--output` option always writes raw graph source text — a Mermaid di
           project-path: ./src/MyApp.sln
 ```
 
+![Example job summary showing a rendered dependency graph](assets/clipmate-example.png)
+
 Set `job-summary` explicitly to override the default either way — e.g. `job-summary: 'true'` alongside `output-path` to get both an artifact and a summary, or `job-summary: 'false'` with `output-path` set (already the default in that case) to skip the summary.
 
 Use `job-summary-title` to customize the heading text above the diagram (defaults to `Dependency graph`). See [examples/job-summary.yml](examples/job-summary.yml) for a full workflow.
