@@ -5,7 +5,7 @@ branding:
   color: 'blue'
 inputs:
   project-path:
-    description: 'Path to the .sln or .csproj file to analyze'
+    description: 'Path to the .sln, .slnx or .csproj file to analyze'
     required: true
   output-path:
     description: 'Where to write the generated graph artifact (svg/png/pdf/jpg/mmd/mermaid). Leave unset to skip writing an artifact file. When project-path is a .sln, each project gets its own file with the project name inserted before the extension (e.g. graph.svg -> graph.MyApp.svg).'

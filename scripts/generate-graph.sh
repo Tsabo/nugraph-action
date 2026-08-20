@@ -52,15 +52,19 @@ build_common_flags() {
 }
 
 # nugraph has no concept of solution files -- it only understands a single
-# project (or a directory containing exactly one). Expand a .sln into its
-# member .csproj/.fsproj/.vbproj entries here and run nugraph once per
+# project (or a directory containing exactly one). Expand a .sln/.slnx into
+# its member .csproj/.fsproj/.vbproj entries here and run nugraph once per
 # project, since that's the only way to get a graph out of a solution at
-# all. A plain project-path is left untouched and keeps behaving exactly as
-# before (one file, one summary section, no name suffix).
+# all. `dotnet sln list` is used rather than parsing the solution file
+# ourselves, since it understands both the classic .sln format and the newer
+# XML-based .slnx format. A plain project-path is left untouched and keeps
+# behaving exactly as before (one file, one summary section, no name
+# suffix).
 expand_projects() {
   project_paths=()
   project_names=()
-  if [[ "${PROJECT_PATH,,}" == *.sln ]]; then
+  local lower_path="${PROJECT_PATH,,}"
+  if [[ "$lower_path" == *.sln || "$lower_path" == *.slnx ]]; then
     is_solution=true
     local sln_dir rel_path project_name
     sln_dir="$(dirname "$PROJECT_PATH")"
@@ -70,7 +74,7 @@ expand_projects() {
       project_paths+=("$sln_dir/$rel_path")
       project_name="$(basename "$rel_path")"
       project_names+=("${project_name%.*}")
-    done < <(grep '^Project(' "$PROJECT_PATH" | awk -F'"' '{print $6}' | grep -iE '\.(cs|fs|vb)proj$')
+    done < <(dotnet sln "$PROJECT_PATH" list | grep -iE '\.(cs|fs|vb)proj$')
 
     if [[ ${#project_paths[@]} -eq 0 ]]; then
       echo "::error::No .csproj/.fsproj/.vbproj projects found in solution file '$PROJECT_PATH'." >&2

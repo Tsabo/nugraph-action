@@ -36,7 +36,7 @@ See [examples/basic.yml](examples/basic.yml) for a full manual (`workflow_dispat
 
 ## Solution files
 
-[nugraph](https://github.com/0xced/nugraph) itself has no concept of `.sln` files -- it only understands a single project (or a directory containing exactly one) and errors out ("Solution files are not supported") if you point it at a solution directly. This action works around that: when `project-path` ends in `.sln`, it parses the solution, finds every `.csproj`/`.fsproj`/`.vbproj` it references, and runs nugraph once per project.
+[nugraph](https://github.com/0xced/nugraph) itself has no concept of solution files -- it only understands a single project (or a directory containing exactly one) and errors out ("Solution files are not supported") if you point it at a solution directly. This action works around that: when `project-path` ends in `.sln` or `.slnx`, it runs `dotnet sln list` against it, finds every `.csproj`/`.fsproj`/`.vbproj` it references, and runs nugraph once per project.
 
 This changes two things for solution input specifically (a plain project path is unaffected and behaves exactly as before):
 
@@ -139,7 +139,7 @@ Set `hide-empty-graphs: 'true'` to skip these -- no output file is written and n
           hide-empty-graphs: 'true'
 ```
 
-This is most useful with a `.sln` `project-path` where only some projects have dependencies, but it also applies to a single-project `project-path` (in which case, setting it to `'true'` means the action does nothing at all if that project has no dependencies).
+This is most useful with a `.sln`/`.slnx` `project-path` where only some projects have dependencies, but it also applies to a single-project `project-path` (in which case, setting it to `'true'` means the action does nothing at all if that project has no dependencies).
 
 ## Private NuGet feeds
 

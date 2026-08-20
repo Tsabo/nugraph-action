@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Fixture/Fixture.csproj" />
+  <Project Path="FixtureTwo/FixtureTwo.csproj" />
+  <Project Path="FixtureEmpty/FixtureEmpty.csproj" />
+</Solution>
