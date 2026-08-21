@@ -103,6 +103,8 @@ Use `ignore` to exclude packages, one pattern per line — each line becomes its
             Humanizer.Core.*
 ```
 
+## Passing extra arguments
+
 Any other nugraph flag not covered by a dedicated input (e.g. `-f`/`--framework`) can be passed through `extra-args`:
 
 ```yaml
