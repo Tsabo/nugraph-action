@@ -132,7 +132,7 @@ This matters because some flags can't be applied solution-wide at all. A common 
             MyApp.Client=--runtime browser-wasm
 ```
 
-Here every project gets `--no-links`, and `MyApp.Client` additionally gets `--runtime browser-wasm`. Although, `--no-links` here is just for demonstation purposes.
+Here every project gets `--no-links`, and `MyApp.Client` additionally gets `--runtime browser-wasm`. Although, `--no-links` here is just for demonstration purposes.
 
 ## Hiding empty graphs
 
