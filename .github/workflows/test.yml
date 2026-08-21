@@ -30,6 +30,12 @@ name: Test action
 # page, but are verified against their .mmd output files instead, since
 # GITHUB_STEP_SUMMARY is scoped per step -- a later step can't read what an
 # earlier step in the same job wrote to it.
+#
+# A fifth job exercises extra-args' solution-shaped form against
+# test/Fixture.sln: a bare "--no-links" line applies to every project, while
+# "Fixture=--direction TopToBottom" applies only to Fixture (FixtureTwo
+# matches no pattern and keeps nugraph's LeftToRight default) -- proving
+# global and per-project lines can be mixed in the same input.
 
 on:
   push:
@@ -192,3 +198,30 @@ jobs:
         run: |
           ! grep -q '^title:' artifacts/nugraph/blank-title.mmd
           grep -q '^graph LR$' artifacts/nugraph/blank-title.mmd
+
+  generate-fixture-solution-extra-args:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # "--no-links" (no '=', starts with '-') is global and applies to every
+      # project; "Fixture=--direction TopToBottom" applies only to Fixture.
+      - name: Generate dependency graph (solution-shaped extra-args)
+        uses: ./
+        with:
+          project-path: test/Fixture.sln
+          output-path: artifacts/nugraph/graph.mmd
+          job-summary: 'false'
+          extra-args: |
+            --no-links
+            Fixture=--direction TopToBottom
+          dotnet-version: '10.0.x'
+
+      - name: Verify the global flag applied to both, the pattern only to Fixture
+        shell: bash
+        run: |
+          grep -q '^graph TB$' artifacts/nugraph/graph.Fixture.mmd
+          grep -q '^graph LR$' artifacts/nugraph/graph.FixtureTwo.mmd
+          ! grep -q '^click ' artifacts/nugraph/graph.Fixture.mmd
+          ! grep -q '^click ' artifacts/nugraph/graph.FixtureTwo.mmd

@@ -39,6 +39,55 @@ parse_ignore_flags() {
   return 0
 }
 
+# EXTRA_ARGS means two different things depending on is_solution (set by
+# expand_projects, which must run before this):
+#  - Single project: a plain space-separated flag string, used as-is via
+#    unquoted expansion -- unchanged from before per-project args existed.
+#  - Solution: newline-separated, where each line is either a flag applied
+#    to every project (starts with '-', e.g. "--framework net8.0") or a
+#    "ProjectName=args" entry (ProjectName supports * wildcards) applied
+#    only to that project, appended after the global flags. Since nugraph
+#    flags always start with '-' and project file names never do, that
+#    leading character is enough to tell the two apart unambiguously.
+# Unrecognized lines (no leading '-', no '=') are warned about and skipped.
+parse_extra_args() {
+  global_extra_args=""
+  project_extra_patterns=()
+  project_extra_values=()
+
+  [[ "$is_solution" != "true" ]] && return 0
+
+  local line pattern
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    if [[ "$line" == -* ]]; then
+      global_extra_args+="$line "
+    elif [[ "$line" == *=* ]]; then
+      pattern="${line%%=*}"
+      project_extra_patterns+=("$pattern")
+      project_extra_values+=("${line#*=}")
+    else
+      echo "::warning::Ignoring extra-args line, neither a flag (starting with '-') nor a 'ProjectName=args' entry: $line" >&2
+    fi
+  done <<< "$EXTRA_ARGS"
+  return 0
+}
+
+# Looks up the extra args configured for a project by matching its name
+# (file name without extension) against the "ProjectName=args" patterns
+# parsed by parse_extra_args() -- the first matching pattern wins. Prints
+# nothing if no pattern matches.
+project_extra_args_for() {
+  local match_name="$1" i
+  for i in "${!project_extra_patterns[@]}"; do
+    if [[ "$match_name" == ${project_extra_patterns[$i]} ]]; then
+      echo "${project_extra_values[$i]}"
+      return 0
+    fi
+  done
+  return 0
+}
+
 # Passed as an array (rather than folded into EXTRA_ARGS) so values
 # containing spaces -- namely TITLE -- work, unlike extra-args which is
 # word-split unquoted.
@@ -132,19 +181,31 @@ write_output() {
   if [[ "$need_dot" == "true" ]]; then
     local graph_source render_format
     graph_source="$(mktemp --suffix=.gv)"
-    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $EXTRA_ARGS --output "$graph_source"
+    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $project_extra_args --output "$graph_source"
     render_format="${output_path##*.}"
     render_format="${render_format,,}"
     [[ "$render_format" == "jpeg" ]] && render_format="jpg"
     dot "-T$render_format" "$graph_source" -o "$output_path"
     rm -f "$graph_source"
   else
-    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $EXTRA_ARGS --output "$output_path"
+    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $project_extra_args --output "$output_path"
   fi
 }
 
 process_project() {
   local project_path="$1" project_name="$2"
+
+  # Set as a global (rather than passed around) so write_output can see it
+  # too, mirroring how common_flags/ignore_flags are already handled. For a
+  # single project-path, EXTRA_ARGS is used as-is; for a solution,
+  # project_name is already its file name without extension (see
+  # expand_projects), so it doubles as the match key against the
+  # "ProjectName=args" patterns parsed by parse_extra_args.
+  if [[ "$is_solution" == "true" ]]; then
+    project_extra_args="$global_extra_args $(project_extra_args_for "$project_name")"
+  else
+    project_extra_args="$EXTRA_ARGS"
+  fi
 
   # A Mermaid probe is generated whenever we need to check for emptiness,
   # even if the final output is a rendered image, since its plain-text
@@ -152,7 +213,7 @@ process_project() {
   local mermaid_source=""
   if [[ "$JOB_SUMMARY" == "true" || "$HIDE_EMPTY_GRAPHS" == "true" ]]; then
     mermaid_source="$(mktemp --suffix=.mmd)"
-    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $EXTRA_ARGS --output "$mermaid_source"
+    nugraph "$project_path" "${ignore_flags[@]}" "${common_flags[@]}" $project_extra_args --output "$mermaid_source"
   fi
 
   if [[ "$HIDE_EMPTY_GRAPHS" == "true" ]] && is_empty_graph "$mermaid_source"; then
@@ -185,6 +246,7 @@ main() {
   parse_ignore_flags
   build_common_flags
   expand_projects
+  parse_extra_args
   detect_dot_requirement
 
   for i in "${!project_paths[@]}"; do

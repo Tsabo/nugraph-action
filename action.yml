@@ -44,7 +44,15 @@ inputs:
     required: false
     default: 'false'
   extra-args:
-    description: 'Additional CLI arguments passed to nugraph, space-separated (values containing spaces are not supported)'
+    description: >
+      Additional CLI arguments passed to nugraph. When project-path is a single project, this is a plain
+      space-separated string of flags (values containing spaces are not supported), applied as-is -- unchanged
+      from before. When project-path is a solution, it's newline-separated instead: a line starting with '-'
+      (e.g. '--framework net8.0') is a flag applied to every project, while a line shaped like 'ProjectName=args'
+      (ProjectName is the project file name without its extension, e.g. MyApp.Client=--runtime browser-wasm;
+      supports * wildcards) applies only to that project, appended after the global flags. Useful when different
+      projects in the same solution need different flags, e.g. a Blazor WebAssembly project needing
+      '-r browser-wasm' while the rest of the solution does not.
     required: false
     default: ''
   install-tool:

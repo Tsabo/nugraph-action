@@ -113,6 +113,27 @@ Any other nugraph flag not covered by a dedicated input (e.g. `-f`/`--framework`
           extra-args: '--framework net8.0'
 ```
 
+When `project-path` is a single project, `extra-args` is exactly that: a plain space-separated string of flags, applied as-is.
+
+When `project-path` is a solution, `extra-args` becomes newline-separated instead, and each line is one of two things:
+
+- A flag, applied to every project -- anything starting with `-`, e.g. `--framework net8.0` above. A single such line behaves exactly like the plain string form did before solutions had per-project args, so existing solution-wide `extra-args` values keep working unchanged.
+- A `ProjectName=args` entry, applied only to that project (`ProjectName` is the project file name without its extension, supports `*` wildcards, first matching pattern wins), appended after the global flags.
+
+This matters because some flags can't be applied solution-wide at all. A common case: a Blazor WebAssembly project's `project.assets.json` always contains both a ridless target and an implicit `browser-wasm` target, which currently makes nugraph fail with `Multiple targets are matching "netX.0" in assets ... (Parameter 'rid')` unless `-r`/`--runtime browser-wasm` is passed for that project specifically -- passing it solution-wide would just break every other project that has no `browser-wasm` target:
+
+```yaml
+      - uses: Tsabo/nugraph-action@master
+        with:
+          project-path: ./src/MyApp.sln
+          output-path: artifacts/nugraph/graph.svg
+          extra-args: |
+            --no-links
+            MyApp.Client=--runtime browser-wasm
+```
+
+Here every project gets `--no-links`, and `MyApp.Client` additionally gets `--runtime browser-wasm`. Although, `--no-links` here is just for demonstation purposes.
+
 ## Hiding empty graphs
 
 Some projects in a solution may have no NuGet dependencies at all, producing a graph with nothing in it but the Mermaid boilerplate:
